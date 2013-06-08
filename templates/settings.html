@@ -1,0 +1,77 @@
+<style>
+  .setting-is-disabled { font-size: 11px; font-style: italic; color: #999; }
+</style>
+
+<div class="field" id="autominEnabled-field">
+  <div class="heading">
+		<label for="autominEnabled">Enabled?</label>
+		<p class="instructions">
+      For debugging purposes AutoMin can be disabled.
+    </p>
+	</div>
+	<div class="input">
+		<div class="select">
+    	<select id="autominEnabled" name="autominEnabled"{% if config_settings.autominEnabled is not null %} disabled="disabled"{% endif %}>
+        {% if config_settings.autominEnabled is null %}
+          <option value="1"{% if settings.autominEnabled %} selected{% endif %}>Yes</option>
+          <option value="0"{% if not settings.autominEnabled %} selected{% endif %}>No</option>
+        {% else %}
+          <option value="1"{% if config_settings.autominEnabled %} selected{% endif %}>Yes</option>
+          <option value="0"{% if not config_settings.autominEnabled %} selected{% endif %}>No</option>
+        {% endif %}
+      </select>
+    </div>
+    {% if config_settings.autominEnabled is not null %}
+      <p class="setting-is-disabled">This setting has been configured in the config file.</p>
+    {% endif %}      
+	</div>
+</div>
+
+<div class="field" id="autominCachingEnabled-field">
+  <div class="heading">
+		<label for="autominCachingEnabled">Caching enabled?</label>
+		<p class="instructions">When caching is disabled, AutoMin will recompile on every request.</p>
+	</div>
+	<div class="input">
+		<div class="select">
+    	<select id="autominCachingEnabled" name="autominCachingEnabled"{% if config_settings.autominCachingEnabled is not null %} disabled="disabled"{% endif %}>
+        {% if config_settings.autominCachingEnabled is null %}
+          <option value="1"{% if settings.autominCachingEnabled %} selected{% endif %}>Yes</option>
+          <option value="0"{% if not settings.autominCachingEnabled %} selected{% endif %}>No</option>
+        {% else %}
+          <option value="1"{% if config_settings.autominCachingEnabled %} selected{% endif %}>Yes</option>
+          <option value="0"{% if not config_settings.autominCachingEnabled %} selected{% endif %}>No</option>
+        {% endif %}
+     </select>
+    </div>
+    {% if config_settings.autominCachingEnabled is not null %}
+      <p class="setting-is-disabled">This setting has been configured in the config file.</p>
+    {% endif %}      
+	</div>
+</div>
+
+<div class="field" id="autominCachePath-field">
+  <div class="heading">
+    <label for="autominCachePath">Cache path</label>
+		<p class="instructions">Complete path to your cache directory. Remember to make it writeable.</p>
+  </div>
+	<div class="input">
+		<input class="text fullwidth" type="text" id="autominCachePath" name="autominCachePath" value="{% if config_settings.autominCachePath is not null %}{{ config_settings.autominCachePath }}{% else %}{{ settings.autominCachePath }}{% endif %}"{% if config_settings.autominCacheURL is not null %} disabled="disabled"{% endif %}>
+    {% if config_settings.autominCachePath is not null %}
+      <p class="setting-is-disabled">This setting has been configured in the config file.</p>
+    {% endif %}      
+	</div>
+</div>
+  
+<div class="field" id="autominCacheURL-field">
+  <div class="heading">
+    <label for="autominCacheURL">Cache URL</label>
+		<p class="instructions">URL to the cache directory. Relative or absolute, depending on your needs.</p>
+  </div>
+	<div class="input">
+		<input class="text fullwidth" type="text" id="autominCacheURL" name="autominCacheURL" value="{% if config_settings.autominCacheURL is not null %}{{ config_settings.autominCacheURL }}{% else %}{{ settings.autominCacheURL }}{% endif %}"{% if config_settings.autominCacheURL is not null %} disabled="disabled"{% endif %}>
+    {% if config_settings.autominCacheURL is not null %}
+      <p class="setting-is-disabled">This setting has been configured in the config file.</p>
+    {% endif %}      
+	</div>
+</div>
