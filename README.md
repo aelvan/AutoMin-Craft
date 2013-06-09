@@ -9,16 +9,16 @@ Disclaimer
 
 Introduction
 ---
-AutoMin for Craft is a plugin that automates the combination and compression of your source files and currently supports CSS, JavaScript, and LESS compression.
+AutoMin for [Craft](http://buildwithcraft.com/) is a plugin that automates the combination and compression of your source files and currently supports CSS, JavaScript, and LESS compression.
 
 AutoMin is smart enough to know when you've changed your source files and will automatically regenerate it's cache when appropriate.
 
 For support, please file a bug report or feature request at the repository on Github:    
 https://github.com/aelvan/AutoMin-Craft/issues
 
-I've also made a port of [AutoMin for Statamic](https://github.com/aelvan/AutoMin-Statamic/).
-
 Please note: I work on this project in my spare time so I may not be able to address your issues right away. This is why AutoMin is free. The code is well organized and documented so feel free to poke around the and submit pull requests for any improvements you make.
+
+I've also made a port of [AutoMin for Statamic](https://github.com/aelvan/AutoMin-Statamic/).
 
 
 Special Thanks
@@ -89,10 +89,10 @@ Statamic way, and because it interfers the least with my plain HTML.
 ####LESS
 
     {% filter automin('less', 'rel="stylesheet"') %}
-        <link rel="stylesheet" href="/less/elements.less" />
-        <link rel="stylesheet" href="/less/normalize.less" />
-        <link rel="stylesheet" href="/less/core.less" />
-        <link rel="stylesheet" href="/less/main.less" />
+        <link rel="stylesheet/less" href="/less/elements.less" />
+        <link rel="stylesheet/less" href="/less/normalize.less" />
+        <link rel="stylesheet/less" href="/less/core.less" />
+        <link rel="stylesheet/less" href="/less/main.less" />
     {% endfilter %}
 
 But, you can also do something like this:
@@ -122,6 +122,8 @@ I have no idea what will turn out to be the best way of using it. :)
 
 *Because the filter outputs raw HTML, output escaping has been turned off. You should under no circumstances run this 
 filter on user generated content.*
+
+Also, see the template variable section below for an alternative way to use AutoMin.
 
 
 Tag Parameters
