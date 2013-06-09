@@ -1,7 +1,17 @@
 <?php
 /**
  * Automin plugin
+ * 
+ * AutoMin for Craft is a plugin that automates the combination and compression of your source files and currently 
+ * supports CSS, JavaScript, and LESS compression.
+ * 
+ * AutoMin is smart enough to know when you've changed your source files and will automatically regenerate 
+ * it's cache when appropriate.
+ * 
+ * https://github.com/aelvan/AutoMin-Craft
  *
+ * Original version for ExpressionEngine (https://github.com/bunchjesse/AutoMin/) by Jesse Bunch (http://getbunch.com/).
+ * 
  * @author André Elvan
  */
 
@@ -9,42 +19,42 @@ namespace Craft;
 
 class AutominPlugin extends BasePlugin
 {
-    public function getName()
-    {
-        return Craft::t('AutoMin');
-    }
+  public function getName()
+  {
+      return Craft::t('AutoMin');
+  }
 
-    public function getVersion()
-    {
-        return '0.1';
-    }
+  public function getVersion()
+  {
+      return '0.1';
+  }
 
-    public function getDeveloper()
-    {
-        return 'André Elvan';
-    }
+  public function getDeveloper()
+  {
+      return 'André Elvan';
+  }
 
-    public function getDeveloperUrl()
-    {
-        return 'http://vaersaagod.no';
-    }
+  public function getDeveloperUrl()
+  {
+      return 'http://vaersaagod.no';
+  }
 
-    public function hasCpSection()
-    {
-        return false;
-    }
+  public function hasCpSection()
+  {
+      return false;
+  }
 
 
-    /**
-     * Register twig extension
-     */
-    public function hookAddTwigExtension()
-    {
-        Craft::import('plugins.automin.twigextensions.AutominTwigExtension');
+  /**
+   * Register twig extension
+   */
+  public function hookAddTwigExtension()
+  {
+      Craft::import('plugins.automin.twigextensions.AutominTwigExtension');
 
-        return new AutominTwigExtension();
-    }
- 
+      return new AutominTwigExtension();
+  }
+
   
   protected function defineSettings()
   {

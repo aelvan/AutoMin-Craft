@@ -28,7 +28,6 @@ class AutominService extends BaseApplicationComponent
   }
 
   
-  
 	/**
 	 * Gets AutoMin settings, either from saved settings or from config
    * 
@@ -64,6 +63,7 @@ class AutominService extends BaseApplicationComponent
 	 * Main processing routine, to be used for all types
 	 * @param $markup
 	 * @param $markup_type One of the MARKUP_TYPE_X values
+	 * @param $markup_attrs tag attributes string
 	 * @return string The new markup
 	 * @author Jesse Bunch
 	*/
@@ -219,6 +219,7 @@ class AutominService extends BaseApplicationComponent
 	 * @param string $cache_filename The url path to the cache file.
 	 * @param integer $last_modified Timestamp of the latest-modified file
 	 * @param string $markup_type One of the MARKUP_TYPE_X values
+	 * @param $markup_attrs tag attributes string
 	 * @return string
 	 * @author Jesse Bunch
 	*/
