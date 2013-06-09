@@ -36,12 +36,14 @@ class AutominService extends BaseApplicationComponent
 	 * @author André Elvan
 	*/
   private function _init_settings() {
-    $settings = array();
+    $plugin = craft()->plugins->getPlugin('automin');
+    $plugin_settings = $plugin->getSettings();    
     
-    $settings['autominEnabled'] = craft()->config->get('autominEnabled');
-    $settings['autominCachingEnabled'] = craft()->config->get('autominCachingEnabled');
-    $settings['autominCachePath'] = craft()->config->get('autominCachePath');
-    $settings['autominCacheURL'] = craft()->config->get('autominCacheURL');
+    $settings = array();
+    $settings['autominEnabled'] = craft()->config->get('autominEnabled')!==null ? craft()->config->get('autominEnabled') : $plugin_settings['autominEnabled'];
+    $settings['autominCachingEnabled'] = craft()->config->get('autominCachingEnabled')!==null ? craft()->config->get('autominCachingEnabled') : $plugin_settings['autominCachingEnabled'];
+    $settings['autominCachePath'] = craft()->config->get('autominCachePath')!==null ? craft()->config->get('autominCachePath') : $plugin_settings['autominCachePath'];
+    $settings['autominCacheURL'] = craft()->config->get('autominCacheURL')!==null ? craft()->config->get('autominCacheURL') : $plugin_settings['autominCacheURL'];
     
     return $settings;
   }

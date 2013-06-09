@@ -9,8 +9,6 @@ Disclaimer
 
 Introduction
 ---
-**Currently, the configuration has to do be done in the config file. Someone please tell me how I can access my settings in my service. :)** 
-
 AutoMin for Craft is a plugin that automates the combination and compression of your source files and currently supports CSS, JavaScript, and LESS compression.
 
 AutoMin is smart enough to know when you've changed your source files and will automatically regenerate it's cache when appropriate.
@@ -97,7 +95,7 @@ Statamic way, and because it interfers the least with my plain HTML.
         <link rel="stylesheet" href="/less/main.less" />
     {% endfilter %}
 
-You can also do something like this ():
+But, you can also do something like this:
 
     {% set jsincludes %}
         <script src="/js/jquery.js"></script>
@@ -119,8 +117,11 @@ Or something like this:
     {{ getFootHtml() | automin('js') }}
 
 
-Or some kind of combination of these. As I (and almost noone else) have close to no experience with Craft so far,
+Or some kind of combination of these. As I (and almost noone else) have any experience with Craft so far,
 I have no idea what will turn out to be the best way of using it. :)
+
+*Because the filter outputs raw HTML, output escaping has been turned off. You should under no circumstances run this 
+filter on user generated content.*
 
 
 Tag Parameters
@@ -144,9 +145,9 @@ Outputs something similar to:
     <link href="/cache/55ed34446f3eac6f869f3fe5b375d311.css?modified=8832678882928" type="text/css" title="default" rel="stylesheet" media="screen, projection">
 
 
-Template Variables
+Template Variable
 ---
-All the settings are exposed as variables, so you can do this:
+All the settings are exposed through the automin template variable, so you can do this:
  
     {% if craft.automin.isEnabled() %}
         Automin is enabled
@@ -174,7 +175,6 @@ The main processing function is also exposed, you can use it like this:
     {% endset %}
     
     {{ craft.automin.process(jsincludes, 'js') | raw }}
-
 
 
 Compiling LESS
