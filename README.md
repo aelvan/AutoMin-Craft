@@ -124,7 +124,7 @@ Or something like this:
     {{ getFootHtml() | automin('js') }}
 
 
-Or some kind of combination of these. As I (and almost noone else) have any experience with Craft so far,
+Or some kind of combination of these. As I (and almost noone else) don't have much experience with Craft so far,
 I have no idea what will turn out to be the best way of using it. :)
 
 *Because the filter outputs raw HTML, output escaping has been turned off. You should under no circumstances run this 
@@ -170,8 +170,9 @@ All the settings are exposed through the automin template variable, so you can d
         Automin caching is enabled
     {% endif %}
     
-    Cache path: {{ craft.automin.getCachePath }}
-    Cache URL: {{ craft.automin.getCacheURL }}
+    Public root path: {{ craft.automin.getPublicRoot() }}
+    Cache path: {{ craft.automin.getCachePath() }}
+    Cache URL: {{ craft.automin.getCacheURL() }}
 
 The main processing function is also exposed, you can use it like this:
  
