@@ -18,6 +18,10 @@ class AutominVariable
     return craft()->automin->getSetting('autominCachingEnabled');
   }
 
+  public function getPublicRoot() {
+    return craft()->automin->getSetting('autominPublicRoot');
+  }
+
   public function getCachePath() {
     return craft()->automin->getSetting('autominCachePath');
   }
