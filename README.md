@@ -32,7 +32,10 @@ Thanks to the minify project for their CSS compressor and the JSMin project for 
 
 Changelog
 ---
-### Version 0.0.1
+### Version 0.2
+ - Added "Public web root path" as a configuration parameter. 
+ 
+### Version 0.1
  - Initial Public Release
 
 
@@ -57,8 +60,12 @@ environment.
 
     'autominEnabled' => true,
     'autominCachingEnabled' => true,
+    'autominPublicRoot' => '/path/to/webroot/public',
     'autominCachePath' => '/path/to/webroot/public/cache',
     'autominCacheURL' => '/cache',
+
+*The autominPublicRoot setting is only needed if your site's main index.php file is not at your webroot. For instance if you're running 
+a multi-language site with the different languages as subfolders.*
 
 
 Example Usage

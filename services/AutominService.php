@@ -41,8 +41,13 @@ class AutominService extends BaseApplicationComponent
     $settings = array();
     $settings['autominEnabled'] = craft()->config->get('autominEnabled')!==null ? craft()->config->get('autominEnabled') : $plugin_settings['autominEnabled'];
     $settings['autominCachingEnabled'] = craft()->config->get('autominCachingEnabled')!==null ? craft()->config->get('autominCachingEnabled') : $plugin_settings['autominCachingEnabled'];
+    $settings['autominPublicRoot'] = craft()->config->get('autominPublicRoot')!==null ? craft()->config->get('autominPublicRoot') : $plugin_settings['autominPublicRoot'];
     $settings['autominCachePath'] = craft()->config->get('autominCachePath')!==null ? craft()->config->get('autominCachePath') : $plugin_settings['autominCachePath'];
     $settings['autominCacheURL'] = craft()->config->get('autominCacheURL')!==null ? craft()->config->get('autominCacheURL') : $plugin_settings['autominCacheURL'];
+
+    if ($settings['autominPublicRoot']=='') {
+      $settings['autominPublicRoot'] = dirname($_SERVER['SCRIPT_FILENAME']);
+    }
     
     return $settings;
   }
@@ -419,8 +424,8 @@ class AutominService extends BaseApplicationComponent
 		}
 
 		// Relative path should leave out the document root
-		$relative_path = str_replace(dirname($_SERVER['SCRIPT_FILENAME']), '', $relative_path);
-
+		$relative_path = str_replace($this->settings['autominPublicRoot'], '', $relative_path);
+    
 		// Parse the path
 		$path_parts = pathinfo($relative_path);
 		$dirname = $path_parts['dirname'].'/';
@@ -433,7 +438,7 @@ class AutominService extends BaseApplicationComponent
 	
 		// Include full root path?
 		if ($include_root) {
-			$file_path = dirname($_SERVER['SCRIPT_FILENAME']) . $file_path;
+			$file_path = $this->settings['autominPublicRoot'] . $file_path;
 		}
 
 		return $this->remove_double_slashes($file_path);

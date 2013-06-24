@@ -50,17 +50,30 @@
 	</div>
 </div>
 
+<div class="field" id="autominPublicRoot-field">
+  <div class="heading">
+    <label for="autominPublicRoot">Public web root path</label>
+    <p class="instructions">Complete path to your public web root. This is only necessary if you have index.php files in other locations than your actual root (ie. in /en or similar for multi-language sites).</p>
+  </div>
+  <div class="input">
+    <input class="text fullwidth" type="text" id="autominPublicRoot" name="autominPublicRoot" value="{% if config_settings.autominPublicRoot is not null %}{{ config_settings.autominPublicRoot }}{% else %}{{ settings.autominPublicRoot }}{% endif %}"{% if config_settings.autominPublicRoot is not null %} disabled="disabled"{% endif %}>
+    {% if config_settings.autominPublicRoot is not null %}
+    <p class="setting-is-disabled">This setting has been configured in the config file.</p>
+    {% endif %}
+  </div>
+</div>
+
 <div class="field" id="autominCachePath-field">
   <div class="heading">
     <label for="autominCachePath">Cache path</label>
-		<p class="instructions">Complete path to your cache directory. Remember to make it writeable.</p>
+    <p class="instructions">Complete path to your cache directory. Remember to make it writeable.</p>
   </div>
-	<div class="input">
-		<input class="text fullwidth" type="text" id="autominCachePath" name="autominCachePath" value="{% if config_settings.autominCachePath is not null %}{{ config_settings.autominCachePath }}{% else %}{{ settings.autominCachePath }}{% endif %}"{% if config_settings.autominCacheURL is not null %} disabled="disabled"{% endif %}>
+  <div class="input">
+    <input class="text fullwidth" type="text" id="autominCachePath" name="autominCachePath" value="{% if config_settings.autominCachePath is not null %}{{ config_settings.autominCachePath }}{% else %}{{ settings.autominCachePath }}{% endif %}"{% if config_settings.autominCachePath is not null %} disabled="disabled"{% endif %}>
     {% if config_settings.autominCachePath is not null %}
-      <p class="setting-is-disabled">This setting has been configured in the config file.</p>
-    {% endif %}      
-	</div>
+    <p class="setting-is-disabled">This setting has been configured in the config file.</p>
+    {% endif %}
+  </div>
 </div>
   
 <div class="field" id="autominCacheURL-field">
