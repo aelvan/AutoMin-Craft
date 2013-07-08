@@ -52,12 +52,6 @@ class Automin_CacheService extends BaseApplicationComponent
 	 * @author Jesse Bunch
 	*/
 	public function write_cache($cache_key, $cache_value) {
-
-		// Is caching disabled?
-		if (!Craft()->automin->getSetting('autominCachingEnabled')) {
-			return FALSE;
-		}
-		
 		$cache_file_path = $this->get_cache_file_path($cache_key);
 
 		if (FALSE === file_put_contents($cache_file_path, $cache_value)) {

@@ -2,14 +2,14 @@ Disclaimer
 ---
 *AutoMin for Craft is a port of Jesse Bunch's [AutoMin add-on for ExpressionEngine](https://github.com/bunchjesse/AutoMin). The Craft version wouldn't be possible without Jesse's fantastic work, and it is being published with his approval.*
   
-*The main changes from the ExpressionEngine version is that the settings are ported to how Craft works. Also, HTML compression is removed and logging is disabled for now.*
+*The main changes from the ExpressionEngine version is that the settings are ported to how Craft works. Also, HTML compression is removed and logging is disabled for now. SCSS support has been added.*
 
 *Apart from that, I hope that I've managed to not mess up Jesse's original code too much, and that it still works as intended. :)*
 
 
 Introduction
 ---
-AutoMin for [Craft](http://buildwithcraft.com/) is a plugin that automates the combination and compression of your source files and currently supports CSS, JavaScript, and LESS compression.
+AutoMin for [Craft](http://buildwithcraft.com/) is a plugin that automates the combination and compression of your source files and currently supports CSS, JavaScript, LESS, and SCSS compression/processing.
 
 AutoMin is smart enough to know when you've changed your source files and will automatically regenerate it's cache when appropriate.
 
@@ -23,15 +23,20 @@ I've also made a port of [AutoMin for Statamic](https://github.com/aelvan/AutoMi
 
 Special Thanks
 ---
-Thanks to the minify project for their CSS compressor and the JSMin project for their JavaScript minifiaction class. Also, thanks goes to leafo for the PHP LESS processor. 
+Thanks to the minify project for their CSS compressor and the JSMin project for their JavaScript minifiaction class. Also, thanks goes to leafo for both the PHP LESS and SCSS processor. 
 
  - Minify: http://code.google.com/p/minify/
  - JSMin: http://www.crockford.com/javascript/jsmin.html
  - LESS for PHP: http://leafo.net/lessphp/
+ - SCSS for PHP: http://leafo.net/scssphp
 
 
 Changelog
 ---
+### Version 0.4
+ - Added support for SCSS.
+ - Implemented intended behavior when cache is turned off. Cache file wasn't written at all, now it will write on every request.
+ 
 ### Version 0.3
  - Added "autominMinifyEnabled" config parameter.
  
@@ -67,6 +72,7 @@ environment.
     'autominPublicRoot' => '/path/to/webroot/public',
     'autominCachePath' => '/path/to/webroot/public/cache',
     'autominCacheURL' => '/cache',
+    'autominSCSSIncludePaths' => '/path/to/scss/library,/path/to/another',
 
 *The autominPublicRoot setting is only needed if your site's main index.php file is not at your webroot. For instance if you're running 
 a multi-language site with the different languages as subfolders.*
@@ -105,6 +111,14 @@ Statamic way, and because it interfers the least with my plain HTML.
         <link rel="stylesheet/less" href="/less/core.less" />
         <link rel="stylesheet/less" href="/less/main.less" />
     {% endfilter %}
+
+####SCSS
+
+    {% filter automin('scss', 'rel="stylesheet"') %}
+        <link rel="stylesheet" href="/scss/normalize.scss" />
+        <link rel="stylesheet" href="/scss/styles.scss" />
+    {% endfilter %}
+
 
 But, you can also do something like this:
 
@@ -171,18 +185,19 @@ All the settings are exposed through the automin template variable, so you can d
     {% if craft.automin.isCachingEnabled() %}
         Automin caching is enabled
     {% else %}
-        Automin caching is enabled
+        Automin caching is disabled
     {% endif %}
     
     {% if craft.automin.isMinifyEnabled() %}
         Automin minification is enabled
     {% else %}
-        Automin minification is enabled
+        Automin minification is disabled
     {% endif %}
     
     Public root path: {{ craft.automin.getPublicRoot() }}
     Cache path: {{ craft.automin.getCachePath() }}
     Cache URL: {{ craft.automin.getCacheURL() }}
+    SCSS Include paths: {{ craft.automin.getSCSSIncludePaths() | join(', ') }}
 
 The main processing function is also exposed, you can use it like this:
  
@@ -200,6 +215,21 @@ The main processing function is also exposed, you can use it like this:
 Compiling LESS
 ---
 If you use AutoMin to compile your LESS source files, you DO NOT need to include the less.js parser file. AutoMin will parse your LESS source file and then compress the CSS output before sending it to your browser.
+
+
+Compiling SCSS (added in version 0.4)
+---
+Since SCSS didn't come from a background where it was parsed by JS, like LESS, I admit that the current syntax for
+including it in the templates isn't the best. Referencing a .scss file in a <link> tag don't make much sense, 
+since there're no use-cases where that would actually work on it's own. I'm planning on adding a more relevant syntax 
+for it in the future.
+
+With the autominSCSSIncludePaths config setting, you can specify include-paths that the parser should look in when using 
+@import statements. This way you can keep your frameworks in a common location, and import them into all your projects. 
+Make sure when using @import that the paths are relative to one of your include-paths.
+ 
+When using @import though, updating files that is imported into your base scss file will not automatically invalidate 
+the cache.
 
 
 Troubleshooting

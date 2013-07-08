@@ -65,6 +65,7 @@ class AutominPlugin extends BasePlugin
          'autominPublicRoot' => array(AttributeType::String, 'default' => ''),
          'autominCachePath' => array(AttributeType::String, 'default' => ''),
          'autominCacheURL' => array(AttributeType::String, 'default' => ''),
+         'autominSCSSIncludePaths' => array(AttributeType::String, 'default' => ''),
     );
   }
   
@@ -77,6 +78,7 @@ class AutominPlugin extends BasePlugin
     $config_settings['autominPublicRoot'] = craft()->config->get('autominPublicRoot');
     $config_settings['autominCachePath'] = craft()->config->get('autominCachePath');
     $config_settings['autominCacheURL'] = craft()->config->get('autominCacheURL');
+    $config_settings['autominSCSSIncludePaths'] = craft()->config->get('autominSCSSIncludePaths');
     
     return craft()->templates->render('automin/settings', array(
       'settings' => $this->getSettings(),

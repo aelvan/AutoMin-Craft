@@ -111,3 +111,16 @@
     {% endif %}      
 	</div>
 </div>
+  
+<div class="field" id="autominSCSSIncludePaths-field">
+  <div class="heading">
+    <label for="autominSCSSIncludePaths">SCSS include paths</label>
+		<p class="instructions">Comma-separated list of paths to any SCSS inlcude paths you want to add.</p>
+  </div>
+	<div class="input">
+		<input class="text fullwidth" type="text" id="autominSCSSIncludePaths" name="autominSCSSIncludePaths" value="{% if config_settings.autominSCSSIncludePaths is not null %}{{ config_settings.autominSCSSIncludePaths }}{% else %}{{ settings.autominSCSSIncludePaths }}{% endif %}"{% if config_settings.autominSCSSIncludePaths is not null %} disabled="disabled"{% endif %}>
+    {% if config_settings.autominSCSSIncludePaths is not null %}
+      <p class="setting-is-disabled">This setting has been configured in the config file.</p>
+    {% endif %}      
+	</div>
+</div>

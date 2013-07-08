@@ -13,6 +13,7 @@ class AutominService extends BaseApplicationComponent
 	const MARKUP_TYPE_JS = 'js';
 	const MARKUP_TYPE_CSS = 'css';
 	const MARKUP_TYPE_LESS = 'less';
+	const MARKUP_TYPE_SCSS = 'scss';
   
   var $settings = array();
 
@@ -45,10 +46,17 @@ class AutominService extends BaseApplicationComponent
     $settings['autominPublicRoot'] = craft()->config->get('autominPublicRoot')!==null ? craft()->config->get('autominPublicRoot') : $plugin_settings['autominPublicRoot'];
     $settings['autominCachePath'] = craft()->config->get('autominCachePath')!==null ? craft()->config->get('autominCachePath') : $plugin_settings['autominCachePath'];
     $settings['autominCacheURL'] = craft()->config->get('autominCacheURL')!==null ? craft()->config->get('autominCacheURL') : $plugin_settings['autominCacheURL'];
+    $settings['autominSCSSIncludePaths'] = craft()->config->get('autominSCSSIncludePaths')!==null ? craft()->config->get('autominSCSSIncludePaths') : $plugin_settings['autominSCSSIncludePaths'];
 
     if ($settings['autominPublicRoot']=='') {
       $settings['autominPublicRoot'] = dirname($_SERVER['SCRIPT_FILENAME']);
     }
+    
+    if ($settings['autominSCSSIncludePaths']=='') {
+      $settings['autominSCSSIncludePaths'] = dirname($_SERVER['SCRIPT_FILENAME']);
+    }
+    
+    $settings['autominSCSSIncludePaths'] = explode(',', $settings['autominSCSSIncludePaths']);
     
     return $settings;
   }
@@ -87,22 +95,24 @@ class AutominService extends BaseApplicationComponent
     
 		// File Extension
 		// LESS files should have a .css extension
-		$extension = ($markup_type == self::MARKUP_TYPE_LESS) ? self::MARKUP_TYPE_CSS : $markup_type;
+		$extension = (($markup_type == self::MARKUP_TYPE_LESS) || ($markup_type == self::MARKUP_TYPE_SCSS)) ? self::MARKUP_TYPE_CSS : $markup_type;
 		$cache_key = Craft()->automin_cache->get_cache_key($markup, $extension);
 
-		// Fetch and validate cache
-		$cache_filename = Craft()->automin_cache->fetch_cache(
-			$cache_key, 
-			$markup, 
-			$last_modified
-		);
-		
-		// Output cache file, if valid
-		if (FALSE !== $cache_filename) {
-			$this->_write_log("Cache found and valid");
-			return $this->_format_output($cache_filename, $last_modified, $markup_type, $markup_attrs);
-		}
-
+    // Fetch and validate cache, if caching is enabled 
+		if ($this->getSetting('autominCachingEnabled')) {
+      $cache_filename = Craft()->automin_cache->fetch_cache(
+        $cache_key, 
+        $markup, 
+        $last_modified
+      );
+      
+      // Output cache file, if valid
+      if (FALSE !== $cache_filename) {
+        $this->_write_log("Cache found and valid");
+        return $this->_format_output($cache_filename, $last_modified, $markup_type, $markup_attrs);
+      }
+    }
+    
 		// Combine files, parse @imports if appropriate
 		$combined_file_data = $this->_combine_files(
 			$filename_array,
@@ -188,6 +198,22 @@ class AutominService extends BaseApplicationComponent
             $code = \Minify_CSS_Compressor::process($code);	
           }
 					break;
+        
+        case self::MARKUP_TYPE_SCSS:
+          
+					// Compile with SCSS
+					require_once(CRAFT_PLUGINS_PATH.'automin/vendor/scssphp/scss.inc.php');
+
+					$scss_parser = new \scssc();
+          $scss_parser->setImportPaths($this->settings['autominSCSSIncludePaths']);
+					$code = $scss_parser->compile($code);
+          
+          if ($this->settings['autominMinifyEnabled']) {
+            // Compress CSS
+            require_once(CRAFT_PLUGINS_PATH.'automin/vendor/class.minify_css_compressor.php');
+            $code = \Minify_CSS_Compressor::process($code);	
+          }
+					break;
 
 				case self::MARKUP_TYPE_CSS:
 
@@ -249,6 +275,7 @@ class AutominService extends BaseApplicationComponent
 
 			case self::MARKUP_TYPE_CSS:
 			case self::MARKUP_TYPE_LESS:
+			case self::MARKUP_TYPE_SCSS:
 				$markup_output = sprintf(
 					'<link href="%s" %s>', 
 					$cache_filename, 
@@ -379,6 +406,13 @@ class AutominService extends BaseApplicationComponent
 			case self::MARKUP_TYPE_LESS:
 				preg_match_all(
 					"/href\=\"([A-Za-z0-9\.\/\_\-\?\=\:]+.[css|less])\"/",
+					$markup,
+					$matches_array
+				);
+				break;
+			case self::MARKUP_TYPE_SCSS:
+				preg_match_all(
+					"/href\=\"([A-Za-z0-9\.\/\_\-\?\=\:]+.[css|scss])\"/",
 					$markup,
 					$matches_array
 				);

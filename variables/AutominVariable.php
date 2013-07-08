@@ -33,7 +33,11 @@ class AutominVariable
   public function getCacheURL() {
     return craft()->automin->getSetting('autominCacheURL');
   }
-
+  
+  public function getSCSSIncludePaths() {
+    return craft()->automin->getSetting('autominSCSSIncludePaths');
+  }
+  
   public function process($content, $type, $attr='') {
     return craft()->automin->process($content, $type, $attr);
   }
