@@ -18,6 +18,10 @@ class AutominVariable
     return craft()->automin->getSetting('autominCachingEnabled');
   }
 
+  public function isMinifyEnabled() {
+    return craft()->automin->getSetting('autominMinifyEnabled');
+  }
+
   public function getPublicRoot() {
     return craft()->automin->getSetting('autominPublicRoot');
   }

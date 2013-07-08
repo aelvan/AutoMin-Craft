@@ -41,6 +41,7 @@ class AutominService extends BaseApplicationComponent
     $settings = array();
     $settings['autominEnabled'] = craft()->config->get('autominEnabled')!==null ? craft()->config->get('autominEnabled') : $plugin_settings['autominEnabled'];
     $settings['autominCachingEnabled'] = craft()->config->get('autominCachingEnabled')!==null ? craft()->config->get('autominCachingEnabled') : $plugin_settings['autominCachingEnabled'];
+    $settings['autominMinifyEnabled'] = craft()->config->get('autominMinifyEnabled')!==null ? craft()->config->get('autominMinifyEnabled') : $plugin_settings['autominMinifyEnabled'];
     $settings['autominPublicRoot'] = craft()->config->get('autominPublicRoot')!==null ? craft()->config->get('autominPublicRoot') : $plugin_settings['autominPublicRoot'];
     $settings['autominCachePath'] = craft()->config->get('autominCachePath')!==null ? craft()->config->get('autominCachePath') : $plugin_settings['autominCachePath'];
     $settings['autominCacheURL'] = craft()->config->get('autominCacheURL')!==null ? craft()->config->get('autominCacheURL') : $plugin_settings['autominCacheURL'];
@@ -181,25 +182,29 @@ class AutominService extends BaseApplicationComponent
 					$less_obj = new \lessc();
 					$code = $less_obj->parse($code);
 
-					// Compress CSS
-					require_once(CRAFT_PLUGINS_PATH.'automin/vendor/class.minify_css_compressor.php');
-					$code = \Minify_CSS_Compressor::process($code);	
-
+          if ($this->settings['autominMinifyEnabled']) {
+            // Compress CSS
+            require_once(CRAFT_PLUGINS_PATH.'automin/vendor/class.minify_css_compressor.php');
+            $code = \Minify_CSS_Compressor::process($code);	
+          }
 					break;
 
 				case self::MARKUP_TYPE_CSS:
 
-					// Compress CSS
-					require_once(CRAFT_PLUGINS_PATH.'automin/vendor/class.minify_css_compressor.php');
-					$code = \Minify_CSS_Compressor::process($code);	
-						
+          if ($this->settings['autominMinifyEnabled']) {
+  					// Compress CSS
+	  				require_once(CRAFT_PLUGINS_PATH.'automin/vendor/class.minify_css_compressor.php');
+		  			$code = \Minify_CSS_Compressor::process($code);	
+          }
 					break;
 
 				case self::MARKUP_TYPE_JS:
 					
-					// Compile JS
-					require_once(CRAFT_PLUGINS_PATH.'automin/vendor/class.jsmin.php');
-					$code = \JSMin::minify($code);
+          if ($this->settings['autominMinifyEnabled']) {
+  					// Compile JS
+	  				require_once(CRAFT_PLUGINS_PATH.'automin/vendor/class.jsmin.php');
+		  			$code = \JSMin::minify($code);
+          }
 
 					// require_once('libraries/class.minify_js_closure.php');
 					// $code = Minify_JS_ClosureCompiler::minify($code);

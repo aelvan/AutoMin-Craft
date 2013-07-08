@@ -32,6 +32,9 @@ Thanks to the minify project for their CSS compressor and the JSMin project for 
 
 Changelog
 ---
+### Version 0.3
+ - Added "autominMinifyEnabled" config parameter.
+ 
 ### Version 0.2
  - Added "Public web root path" as a configuration parameter. 
  
@@ -60,6 +63,7 @@ environment.
 
     'autominEnabled' => true,
     'autominCachingEnabled' => true,
+    'autominMinifyEnabled' => true,
     'autominPublicRoot' => '/path/to/webroot/public',
     'autominCachePath' => '/path/to/webroot/public/cache',
     'autominCacheURL' => '/cache',
@@ -168,6 +172,12 @@ All the settings are exposed through the automin template variable, so you can d
         Automin caching is enabled
     {% else %}
         Automin caching is enabled
+    {% endif %}
+    
+    {% if craft.automin.isMinifyEnabled() %}
+        Automin minification is enabled
+    {% else %}
+        Automin minification is enabled
     {% endif %}
     
     Public root path: {{ craft.automin.getPublicRoot() }}
