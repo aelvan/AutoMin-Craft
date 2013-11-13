@@ -43,6 +43,7 @@ class AutominService extends BaseApplicationComponent
     $settings['autominEnabled'] = craft()->config->get('autominEnabled')!==null ? craft()->config->get('autominEnabled') : $plugin_settings['autominEnabled'];
     $settings['autominCachingEnabled'] = craft()->config->get('autominCachingEnabled')!==null ? craft()->config->get('autominCachingEnabled') : $plugin_settings['autominCachingEnabled'];
     $settings['autominMinifyEnabled'] = craft()->config->get('autominMinifyEnabled')!==null ? craft()->config->get('autominMinifyEnabled') : $plugin_settings['autominMinifyEnabled'];
+    $settings['autominAdaptCssPath'] = craft()->config->get('autominAdaptCssPath')!==null ? craft()->config->get('autominAdaptCssPath') : $plugin_settings['autominAdaptCssPath'];
     $settings['autominPublicRoot'] = craft()->config->get('autominPublicRoot')!==null ? craft()->config->get('autominPublicRoot') : $plugin_settings['autominPublicRoot'];
     $settings['autominCachePath'] = craft()->config->get('autominCachePath')!==null ? craft()->config->get('autominCachePath') : $plugin_settings['autominCachePath'];
     $settings['autominCacheURL'] = craft()->config->get('autominCacheURL')!==null ? craft()->config->get('autominCacheURL') : $plugin_settings['autominCacheURL'];
@@ -314,8 +315,18 @@ class AutominService extends BaseApplicationComponent
 				return FALSE;
 			}
 
-			// Get file contents
-			$combined_output .= file_get_contents($file_array['server_path']);
+			// Get file content
+			$this_file_content .= file_get_contents($file_array['server_path']);
+		
+			// Adapt CSS paths (If set in config)
+			if ( $this->getSetting('autominAdaptCssPath') ) {
+				$this_file_content = preg_replace_callback('/(url\(\s*([^\)\s]+)\s*\))/i', function ($match) {
+					return $this->_adapt_css_path( $match[2], $file_array['server_path'] );
+				}, $code);
+			}
+		
+			//Combine file contents
+			$combined_output .= $this_file_content;
 
 			// Parse @imports
 			if ($should_parse_imports) {
@@ -531,18 +542,52 @@ class AutominService extends BaseApplicationComponent
 
 		return $string;
 	}
-  
+
+
+	/**
+	 * Looks for relative paths in the provided string and converts it to an absolute path.
+	 * @param string $path_match
+	 * @param string $file_server_path Passed from _combine_files (Which passed it from _normalize_file_path()).
+	 * @return string
+	 * @author zeuszeus
+	*/
+	private function _adapt_css_path($path_match, $file_server_path) {
+		//Is path already absolute?
+		if ( !preg_match('/(^\.)|(^[a-zA-Z0-9]+\.[a-zA-Z]{3,4}$)/i', $path_match) ) {
+			return $path_match;
+		}
+		
+		//Delete " and '
+		$new_path = str_replace(array('"', '\''), '', $path_match);
+		
+		//Prepend server_path of css-dir to path_match
+		$folder_server_path = dirname($file_server_path);
+		$new_path = $folder_server_path.'/'.$new_path;
+		
+		//Clean up path
+		$new_path = realpath($new_path);
+		
+		//Adaption failed?
+		if ( $new_path == false ) {
+			return $path_match;
+		}
+		
+		//Return adapted path
+		$new_path = 'url(\''.$new_path.'\')';
+		return $new_path;
+	}
+
+
 	/**
 	 * Removes double slashes from string
 	 * @param string $str
 	 * @return string
 	 * @author André Elvan
 	*/
-  private function remove_double_slashes($str) {
+	private function remove_double_slashes($str) {
 		return preg_replace("#([^/:])/+#", "\\1/", $str);
 	}
 
-  
 
 	/**
 	 * Writes the message to the template log
@@ -553,7 +598,7 @@ class AutominService extends BaseApplicationComponent
 	private function _write_log($message) {
 		//$this->EE->TMPL->log_item("AutoMin Module: $message");
 	}
-  
-    
-  
+
+
+
 }
