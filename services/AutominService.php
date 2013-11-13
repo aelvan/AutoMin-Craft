@@ -14,6 +14,8 @@ class AutominService extends BaseApplicationComponent
 	const MARKUP_TYPE_CSS = 'css';
 	const MARKUP_TYPE_LESS = 'less';
 	const MARKUP_TYPE_SCSS = 'scss';
+	
+	var $CurrentCssFileServerPath = '';
   
   var $settings = array();
 
@@ -308,6 +310,7 @@ class AutominService extends BaseApplicationComponent
 	private function _combine_files($files_array, $should_parse_imports = FALSE) {
 		
 		$combined_output = '';
+		$this_file_content = '';
 		foreach ($files_array as $file_array) {
 			
 			if (!file_exists($file_array['server_path'])
@@ -317,14 +320,17 @@ class AutominService extends BaseApplicationComponent
 
 			// Get file content
 			$this_file_content .= file_get_contents($file_array['server_path']);
-		
+			
 			// Adapt CSS paths (If set in config)
 			if ( $this->getSetting('autominAdaptCssPath') ) {
-				$this_file_content = preg_replace_callback('/(url\(\s*([^\)\s]+)\s*\))/i', function ($match) {
-					return $this->_adapt_css_path( $match[2], $file_array['server_path'] );
-				}, $code);
+				$this->CurrentCssFileServerPath = $file_array['server_path'];
+				$this_file_content = preg_replace_callback(
+					'/:{1}\ *(url\(\s*([^\)\s]+)\s*\))/i',
+					array($this, '_adapt_css_path'),
+					$this_file_content
+				);
 			}
-		
+			
 			//Combine file contents
 			$combined_output .= $this_file_content;
 
@@ -551,14 +557,21 @@ class AutominService extends BaseApplicationComponent
 	 * @return string
 	 * @author zeuszeus
 	*/
-	private function _adapt_css_path($path_match, $file_server_path) {
-		//Is path already absolute?
-		if ( !preg_match('/(^\.)|(^[a-zA-Z0-9]+\.[a-zA-Z]{3,4}$)/i', $path_match) ) {
-			return $path_match;
+	private function _adapt_css_path($match, $file_server_path=NULL) {
+		
+		//Init
+		$path_match = $match[2];
+		if (empty($file_server_path)) {
+			$file_server_path = $this->CurrentCssFileServerPath;
 		}
 		
 		//Delete " and '
 		$new_path = str_replace(array('"', '\''), '', $path_match);
+		
+		//Is path already absolute?
+		if ( !preg_match('/(^\.)|(^[a-zA-Z0-9]+\.[a-zA-Z]{3,4}$)/i', $new_path) ) {
+			return ': url(\''.$new_path.'\')';
+		}
 		
 		//Prepend server_path of css-dir to path_match
 		$folder_server_path = dirname($file_server_path);
@@ -567,13 +580,11 @@ class AutominService extends BaseApplicationComponent
 		//Clean up path
 		$new_path = realpath($new_path);
 		
-		//Adaption failed?
-		if ( $new_path == false ) {
-			return $path_match;
-		}
+		//Remove everything before public_root
+		$new_path = str_replace( $this->getSetting('autominPublicRoot'), '', $new_path );
 		
 		//Return adapted path
-		$new_path = 'url(\''.$new_path.'\')';
+		$new_path = ': url(\''.$new_path.'\')';
 		return $new_path;
 	}
 
