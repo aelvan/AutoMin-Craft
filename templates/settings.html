@@ -73,6 +73,29 @@
 	</div>
 </div>
 
+<div class="field" id="autominAdaptCssPath-field">
+  <div class="heading">
+		<label for="autominAdaptCssPath">Adapt CSS Paths?</label>
+		<p class="instructions">When adaption is enabled, AutoMin will convert relative css paths to absolute ones.</p>
+	</div>
+	<div class="input">
+		<div class="select">
+    	<select id="autominAdaptCssPath" name="autominAdaptCssPath"{% if config_settings.autominAdaptCssPath is not null %} disabled="disabled"{% endif %}>
+        {% if config_settings.autominAdaptCssPath is null %}
+          <option value="1"{% if settings.autominAdaptCssPath %} selected{% endif %}>Yes</option>
+          <option value="0"{% if not settings.autominAdaptCssPath %} selected{% endif %}>No</option>
+        {% else %}
+          <option value="1"{% if config_settings.autominAdaptCssPath %} selected{% endif %}>Yes</option>
+          <option value="0"{% if not config_settings.autominAdaptCssPath %} selected{% endif %}>No</option>
+        {% endif %}
+     </select>
+    </div>
+    {% if config_settings.autominAdaptCssPath is not null %}
+      <p class="setting-is-disabled">This setting has been configured in the config file.</p>
+    {% endif %}      
+	</div>
+</div>
+
 <div class="field" id="autominPublicRoot-field">
   <div class="heading">
     <label for="autominPublicRoot">Public web root path</label>
