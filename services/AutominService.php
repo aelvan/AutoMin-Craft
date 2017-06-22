@@ -7,6 +7,7 @@
  */
 namespace Craft;
 
+use Leafo\ScssPhp\Compiler;
 
 class AutominService extends BaseApplicationComponent
 {
@@ -15,9 +16,24 @@ class AutominService extends BaseApplicationComponent
 	const MARKUP_TYPE_LESS = 'less';
 	const MARKUP_TYPE_SCSS = 'scss';
   
-  var $settings = array();
-
+  public $settings = array();
   
+  /**
+   * When compiling SCSS files, this is populated with the content of the source map file
+   * This is later saved to disk during cache phase
+   * @var string
+   */
+  private $sourceMapOutput = null;
+
+  /**
+   * Receives the parameters coming from the Craft Twig filter, initiates the compilation process,
+   * then returns the final HTML referencing the compiled scripts
+   * 
+   * @param string $content block of HTML as captured by the Twig filter
+   * @param string $type - one of 'js', 'css', 'less' or 'scss'
+   * @param string $attr - additional attributes to be appended to final <link> or <script> tag
+   * @return string of HTML containing compiled assets
+   */
   public function process($content, $type, $attr) {
     $this->settings = $this->_init_settings();
     
@@ -31,7 +47,7 @@ class AutominService extends BaseApplicationComponent
   
 	/**
 	 * Gets AutoMin settings, either from saved settings or from config
-   * 
+	 * 
 	 * @return array Array containing all settings
 	 * @author André Elvan
 	*/
@@ -75,6 +91,7 @@ class AutominService extends BaseApplicationComponent
 
 	/**
 	 * Main processing routine, to be used for all types
+	 * 
 	 * @param $markup
 	 * @param $markup_type One of the MARKUP_TYPE_X values
 	 * @param $markup_attrs tag attributes string
@@ -113,13 +130,24 @@ class AutominService extends BaseApplicationComponent
       }
     }
     
-		// Combine files, parse @imports if appropriate
-		$combined_file_data = $this->_combine_files(
-			$filename_array,
-			($markup_type == self::MARKUP_TYPE_CSS
-				OR $markup_type == self::MARKUP_TYPE_LESS)
-		);
-
+		// Combine/concatenate all the <script> or <link> tags within the block
+		// Also parse @imports for CSS/LESS files (but not for SCSS which we'll tackle differently)
+		if ($markup_type == self::MARKUP_TYPE_SCSS) {
+			// For SCSS, we get better results (and accurate source maps)
+			// if we generate a fake root file that then @include's all the others
+			$combined_file_data = '';
+			foreach ($filename_array as $file) {
+				$combined_file_data .= '@import "' . ltrim($file['url_path'], '/') . "\";\n";
+			}
+			
+		} else {
+			$combined_file_data = $this->_combine_files(
+				$filename_array,
+				($markup_type == self::MARKUP_TYPE_CSS
+					OR $markup_type == self::MARKUP_TYPE_LESS)
+			);
+		}
+		
 		// If we couldn't read some files, return original tags
 		if (FALSE === $combined_file_data) {
 			$this->_write_log("ERROR: One or more of your files couldn't be read.");
@@ -135,6 +163,7 @@ class AutominService extends BaseApplicationComponent
 		$data_length_after = strlen($combined_file_data) / 1024;
 
 		// Log the savings
+		// Note: this will not be accurate for SCSS files because of the @include's
 		$data_savings_kb = $data_length_before - $data_length_after;
 		$data_savings_percent = ($data_savings_kb / $data_length_before) * 100;
 		$data_savings_message = sprintf(
@@ -153,9 +182,19 @@ class AutominService extends BaseApplicationComponent
 			return $markup;
 		}
 
+		// If a source map was generated during _compile_and_compress() then save source map output
+		// to disk and add a link to it at the end of the compiled CSS
+		if ($this->sourceMapOutput) {
+			if (Craft()->automin_cache->write_cache($cache_key . '.map', $this->sourceMapOutput)) {
+				$combined_file_data .= '/*# sourceMappingURL=' . $cache_key . '.map' . ' */';
+			}
+			// Clear source map output for future filter blocks in this request
+			$this->sourceMapOutput = null;
+		}
+		
 		// Cache output
 		$cache_result = Craft()->automin_cache->write_cache($cache_key, $combined_file_data);
-
+		
 		// If caching failed, return original tags
 		if (FALSE === $cache_result) {
 			$this->_write_log("ERROR: Caching is disabled or we were unable to write to your cache directory.");
@@ -168,12 +207,14 @@ class AutominService extends BaseApplicationComponent
 
 	/**
 	 * Compress and compile (if necessary) the code.
-	 * @param string $code
+	 * 
+	 * @param string $code raw uncompiled source
 	 * @param string $markup_type One of the MARKUP_TYPE_X values
-	 * @return mixed FALSE if failure, string if success
+	 * @param string $filePath used for generating source maps and processing @includes
+	 * @return mixed string of compiled code if success, or FALSE if failure
 	 * @author Jesse Bunch
 	*/
-	private function _compile_and_compress($code, $markup_type) {
+	private function _compile_and_compress($code, $markup_type, $filePath = null) {
 
 		@ini_set('memory_limit', '50M');
 		@ini_set('memory_limit', '128M');
@@ -195,7 +236,7 @@ class AutominService extends BaseApplicationComponent
           if ($this->settings['autominMinifyEnabled']) {
             // Compress CSS
             require_once(CRAFT_PLUGINS_PATH.'automin/vendor/class.minify_css_compressor.php');
-            $code = \Minify_CSS_Compressor::process($code);	
+            $code = Automin_Minify_CSS_Compressor::process($code);	
           }
 					break;
         
@@ -203,16 +244,46 @@ class AutominService extends BaseApplicationComponent
           
 					// Compile with SCSS
 					require_once(CRAFT_PLUGINS_PATH.'automin/vendor/scssphp/scss.inc.php');
-
-					$scss_parser = new \scssc();
+					$scss_parser = new Compiler();
+					
+					// TODO: Also add the path of the current script, so that relative paths may be used
           $scss_parser->setImportPaths($this->settings['autominSCSSIncludePaths']);
-					$code = $scss_parser->compile($code);
           
+          // Output line numbers in the compiled code. This is required for generating a source map.
+          $scss_parser->setLineNumberStyle(Compiler::LINE_COMMENTS);
+          
+          // echo "Initial code: $code<br>";
+          
+          // Compile the SCSS
+					$code = $scss_parser->compile($code);
+					
+          // echo "Compiled code: $code<br>";
+           
+        	// Minify source, if this is enabled
           if ($this->settings['autominMinifyEnabled']) {
-            // Compress CSS
-            require_once(CRAFT_PLUGINS_PATH.'automin/vendor/class.minify_css_compressor.php');
-            $code = \Minify_CSS_Compressor::process($code);	
+            // Compress the CSS *but* leave the line number comments in place,
+            // because we need these to generate the source maps in the next step
+            $code = Automin_Minify_CSS_Compressor::process($code, ['keepLineNumbers' => true]);
+            
+            // Add in a line return prior to each line number comment	
+            // (fixes a bug in the generation of source maps)
+            $code = preg_replace('`}/\\* line`', "}\r\n/* line", $code);
+            
+            // But remove line returns *after* each line number comment, to improve compression
+            $code = preg_replace('`\\*/\\s+`', "*/", $code);
           }
+          
+					// Generate a source map file
+					// (Saves it inside $this->sourceMapOutput for later processing)
+					$this->generateMap($code);
+          
+          // Now that we have our source map, we can remove those line number comments
+          // (but NOT the surrounding line returns, otherwise the sourcemap line numbers will no longer be accurate)
+          if ($this->settings['autominMinifyEnabled']) {
+          	$code = preg_replace('`/\\*(?!!).+?\\*/`s', '', $code);
+          }
+          // echo $code;
+          
 					break;
 
 				case self::MARKUP_TYPE_CSS:
@@ -249,16 +320,78 @@ class AutominService extends BaseApplicationComponent
 		return $code;
 
 	}
+	
+	/**
+	 * Generate source map from a string of compiled CSS
+	 *
+	 * @param string $compiledCss - string of compiled CSS code containing line number comments
+	 * @param string $sourceFile - path to original (root) SCSS file (relative to DOCUMENT_ROOT)
+	 * @param string $compiledFile - path to compiled CSS file (relative to DOCUMENT_ROOT) (we use the same name for the .map file)
+	 * @return bool|string - Path to map or false if not able to generate.
+	 */
+	public function generateMap($compiledCss) {
+		
+		// echo $compiledCss;
+	  
+	  // Initialise Koala source map library
+	  include_once(CRAFT_PLUGINS_PATH . 'automin/vendor/sourcemaps/Kwf/SourceMaps/SourceMap.php');
+	  include_once(CRAFT_PLUGINS_PATH . 'automin/vendor/sourcemaps/Kwf/SourceMaps/Base64VLQ.php');
+	  $sourceMapGenerator = \Kwf_SourceMaps_SourceMap::createEmptyMap($compiledCss);
+	  
+	  // Loop through code 1 line at a time
+	  foreach (explode("\n", $compiledCss) as $lNumber => $line) {
+	  	
+	  	// Search for the string /* line X */ or /* line X, /path/to/file.css */
+	    preg_match_all('#[[:space:]]*/\* line ([0-9]+)(, )?([^*]+) \*/#', $line, $matches);
+	    // $lNumber++;
+	    
+	    // Did the regex match on this line?
+	    if (count($matches) < 2) {
+	      continue;
+	    }
+	    
+	    // I don't think we normally get multiple comments on the same line? But we do a loop here in case
+	    for ($i = 0; $i < count($matches[1]); $i++) {
+	      if (!isset($matches[2][$i])) {
+	        break;
+	      }
+	      $originalLine = $matches[1][$i];
+	      $originalFile = $matches[3][$i];
+	      
+	      // Lines from the root SCSS file do not display a path, so we'll populate that with the $sourceFile
+	      // if (empty($originalFile))
+	      // 	$originalFile = $sourceFile;
+	      
+	      // $generatedColumnIndex = $currentIndex - $sizeOfPrecedingCommentBlocks;
+	      
+	      $craftPublicFolder = dirname($_SERVER['SCRIPT_FILENAME']);
+	      $originalFile = str_replace($craftPublicFolder, '', $originalFile);
+	      $sourceMapGenerator->addMapping(
+	      	$lNumber + 1, 			// Generated line
+	      	0, 							// Generated column
+	      	$originalLine,  // Original line
+	      	0, 							// Original column
+	      	$originalFile   // Original file
+	      );
+	    }
+	  }
+	  // echo dirname($_SERVER['SCRIPT_FILENAME']) . '<br>';
+	  // TODO: Make dynamic
+	  $this->sourceMapOutput = $sourceMapGenerator->getMapContents();
+	  // echo $output;
+	  return; // (false === file_put_contents($outputFile, $output)) ? false : $outputFile;
+	}
 
 	/**
 	 * Formats the output into valid markup
+	 * 
 	 * @param string $cache_filename The url path to the cache file.
 	 * @param integer $last_modified Timestamp of the latest-modified file
 	 * @param string $markup_type One of the MARKUP_TYPE_X values
 	 * @param $markup_attrs tag attributes string
 	 * @return string
 	 * @author Jesse Bunch
-	*/
+	 */
 	private function _format_output($cache_filename, $last_modified, $markup_type, $markup_attrs) {
 
 		$markup_output = '';
@@ -300,6 +433,7 @@ class AutominService extends BaseApplicationComponent
 	/**
 	 * Returns a string of all the files combined. If a file cannot be read,
 	 * this function will return FALSE.
+	 * 
 	 * @param array $files_array Pass in the output of _prep_filenames
 	 * @return mixed string or FALSE
 	 * @author Jesse Bunch
@@ -314,8 +448,13 @@ class AutominService extends BaseApplicationComponent
 				return FALSE;
 			}
 
-			// Get file contents
-			$combined_output .= file_get_contents($file_array['server_path']);
+			// Get file contents, and place a comment at the top of each included file
+			// This may help with debugging (when minification is turned off)
+			// and is also required for SCSS source maps to work correctly
+			// (otherwise we have no way of locating which file the original statement came from)
+			$combined_output .= 
+				"/* Source file: \"$file_array[server_path]\" */\n" 
+				. file_get_contents($file_array['server_path']);
 
 			// Parse @imports
 			if ($should_parse_imports) {
@@ -556,4 +695,48 @@ class AutominService extends BaseApplicationComponent
   
     
   
+}
+
+require_once(CRAFT_PLUGINS_PATH.'automin/vendor/class.minify_css_compressor.php');
+
+/**
+ * This class extends the default Minify CSS compression class
+ * to allow us to NOT strip line number comments from SCSS. 
+ * We need these comments to be able to generate source maps.
+ */
+class Automin_Minify_CSS_Compressor extends \Minify_CSS_Compressor {
+	
+	/**
+	 * Override the default process() function to ensure
+	 * we instatiate our own class, not the default one
+	 * 
+	 * The option ['keepLineNumbers' => true] must be passed in
+	 * for source maps to work correctly
+	 * 
+	 * @param $css uncompressed source code
+	 * @param array $options
+	 * @return compressed/minified source
+	 */
+	public static function process($css, $options = array())
+	{
+	    $obj = new Automin_Minify_CSS_Compressor($options);
+	    return $obj->_process($css);
+	}
+	
+  /**
+   * Override the default comment handling function
+   * A comment string is passed in. If 'keepLineNumbers' == true
+   * and it looks like a line number, we'll return the original 
+   * unmodified comment, otherwise pass it onto the default
+   * comment handler
+   * 
+   * @param array $m regex matches
+   * @return string
+   */
+  protected function _commentCB($m) {
+      if (!empty($this->_options['keepLineNumbers']))
+      	if (strpos($m[1], 'line ') !== false)
+      		return $m[0];
+      return parent::_commentCB($m);
+  }
 }

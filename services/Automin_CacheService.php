@@ -62,7 +62,7 @@ class Automin_CacheService extends BaseApplicationComponent
 	}
 	
 	/**
-	 * Retruns the cache key for the given cache value
+	 * Returns the cache key for the given cache value
 	 * @param string $cache_value
 	 * @param string $extension
 	 * @return string
