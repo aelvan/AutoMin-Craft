@@ -53,7 +53,7 @@ class Minify_CSS_Compressor {
      * 
      * @param array $options (currently ignored)
      */
-    private function __construct($options) {
+    protected function __construct($options) {
         $this->_options = $options;
     }
     
